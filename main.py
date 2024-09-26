@@ -5,8 +5,7 @@ import urls as url
 def newLine():
     print("\n")       
 
-accountID = "https://fortniteapi.io/v1/lookup?username={}"
-Account_Level = "https://fortniteapi.io/v1/stats?account={}"
+accountInfo = "https://fortnite-api.com/v2/stats/br/v2"
 tracker = "https://fortnitetracker.com/profile/all/{}"
 
 file = open('teams.json', 'r')
@@ -17,7 +16,6 @@ for team in data:
 for team in teams:
     newLine()
     response = web.get(url.RallycryAccountContacts.format(team), headers=header.RallycryHeaders)
-
 
     if response.status_code != 200:
         if response.status_code == 400:
@@ -39,20 +37,30 @@ for team in teams:
         if response_json[x]["network"] == "EPIC":
             newLine()
             print("    Epic Games: {}".format(response_json[x]["handle"]))
-            
-            account = json.loads(web.get(accountID.format(response_json[x]["handle"]), headers=header.FortniteApiIOHeaders).text)
-            if list(account.keys())[1] == "error" and account["error"]["code"] != 'INVALID_API_KEY':
-                print("    Username Incorrect or Not Findable")
-                print("    check link bellow")
-            elif list(account.keys())[1] == "error" and account["error"]["code"] == 'INVALID_API_KEY':
-                print("    Invalid API Key")
-                exit()
+            accountInfoResponse = web.get(accountInfo, headers=header.Fortnite_ApiHeader,params={'name':response_json[x]["handle"]})
+            if list(json.loads(accountInfoResponse.text).keys())[1] == "error":
+                print("    Account Doesnt Exist")
             else:
-                if json.loads(web.get(Account_Level.format(account["account_id"]),headers=header.FortniteApiIOHeaders).text)["result"] == False:
-                    print("    Account Private")
-                else:
-                    print("    level: {}".format(json.loads(web.get(Account_Level.format(account["account_id"]), headers=header.FortniteApiIOHeaders).text)["account"]["level"]))
-            print("    {}".format(tracker.format(response_json[x]["handle"])))        
+                print("    Level:{}".format(json.loads(accountInfoResponse.text)["data"]["battlePass"]["level"]))
+                tempDictionary = {
+                    'KBM':0,
+                    'Console':0,
+                    'Mobile':0
+                }
+                if "keyboardMouse" in list(json.loads(accountInfoResponse.text)["data"]["stats"].keys()):
+                    tempDictionary["KBM"] = json.loads(accountInfoResponse.text)["data"]["stats"]["keyboardMouse"]["overall"]["minutesPlayed"]
+                if "gamepad" in list(json.loads(accountInfoResponse.text)["data"]["stats"].keys()):
+                    tempDictionary["Console"] = json.loads(accountInfoResponse.text)["data"]["stats"]["gamepad"]["overall"]["minutesPlayed"]
+                if "touch" in list(json.loads(accountInfoResponse.text)["data"]["stats"].keys()):
+                    tempDictionary["Mobile"] = json.loads(accountInfoResponse.text)["data"]["stats"]["touch"]["overall"]["minutesPlayed"]
+                
+                print("    Most Played Platform: {}".format(max(tempDictionary, key=tempDictionary.get)))
+                print("    Time played on platform:")
+                print("        Console: {} minutes".format(tempDictionary["Console"]))
+                print("        Mobile: {} minutes".format(tempDictionary["Mobile"]))
+                print("        Keyboard and Mouse: {} minutes".format(tempDictionary["KBM"]))
+
+                    
             x = x +1
         elif response_json[x]["network"] == "DISCORD" and response_json[x-1]["user"]["id"] != response_json[x]["user"]["id"]:
             newLine()
