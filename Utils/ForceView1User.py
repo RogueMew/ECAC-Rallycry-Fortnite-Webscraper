@@ -1,6 +1,6 @@
 import requests as web
-import Headers as header
-import urls as url
+import Data.Headers as header
+import Data.urls as url
 import json
 
 user = input("Username: ")

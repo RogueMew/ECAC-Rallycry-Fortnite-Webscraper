@@ -1,2 +1,0 @@
-RallycryAccountContacts = ""
-TeamPage = ""
